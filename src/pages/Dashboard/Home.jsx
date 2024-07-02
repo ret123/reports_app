@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import Dropdown from "react-bootstrap/Dropdown";
 import { useGetConfigQuery, useGetTablesQuery } from "../../services/reports/reportApiSlice";
+import TableDetails from "../../components/TableDetails";
 
 const Home = () => {
   const [
@@ -14,6 +15,8 @@ const Home = () => {
   ] = useSendLogoutMutation();
   const refreshToken = useSelector(selectCurrentRefreshToken);
   const navigate = useNavigate();
+
+  const [selectedTable, setSelectedTable] = useState(null);
 
   const { data: config, error: configError, isLoading: isConfigLoading } = useGetConfigQuery();
   const { data: tables, error: tablesError, isLoading: isTablesLoading } = useGetTablesQuery();
@@ -63,11 +66,24 @@ const Home = () => {
         </div>
         <div className="mt-4">
           <h2>Available Tables</h2>
-          <ul>
+          <DropdownButton
+            id="table-dropdown"
+            title={selectedTable || "Select a Table"}
+            onSelect={(e) => setSelectedTable(e)}
+          >
             {tables.map((table) => (
-              <li key={table}>{table}</li>
+              <Dropdown.Item key={table} eventKey={table}>
+                {table}
+              </Dropdown.Item>
             ))}
-          </ul>
+          </DropdownButton>
+          {selectedTable && (
+            <div>
+              <h3>{selectedTable} Details</h3>
+              {/* Render table details component */}
+              <TableDetails tableName={selectedTable} />
+            </div>
+          )}
         </div>
       </div>
     </>
