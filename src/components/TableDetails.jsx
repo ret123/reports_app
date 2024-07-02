@@ -7,8 +7,15 @@ const TableDetails = ({ tableName }) => {
 
   const { data: table, error: tableError, isLoading: isTableLoading } = useGetTableDetailsQuery(tableName);
   console.log(table);
-  const [tableData, setTableData] = useState(table.rows);
-  const [columns, setColumns] = useState(table.columns);
+  if (isTableLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (tableError) {
+    return <div>Error: {tableError.message}</div>;
+  }
+  // const [tableData, setTableData] = useState(table.rows);
+  // const [columns, setColumns] = useState(table.columns);
 
 //   useEffect(() => {
 //     const fetchData = async () => {
@@ -26,19 +33,19 @@ const TableDetails = ({ tableName }) => {
 
   return (
     <div>
-      {tableData.length > 0 ? (
+      {table.rows.length > 0 ? (
         <table className="table table-bordered">
           <thead>
             <tr>
-              {columns.map((col) => (
+              {table.columns.map((col) => (
                 <th key={col}>{col}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {tableData.map((row, index) => (
+            {table.rows.map((row, index) => (
               <tr key={index}>
-                {columns.map((col) => (
+                {table.columns.map((col) => (
                   <td key={col}>{row[col]}</td>
                 ))}
               </tr>
