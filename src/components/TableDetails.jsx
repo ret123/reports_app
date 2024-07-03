@@ -51,8 +51,7 @@ const { columns, filters, actions } = config;
 
   return (
     <div>
-      
-      {table.rows.length > 0 ? (
+      {tableData.length > 0 ? (
         <table className="table table-bordered">
           <thead>
             <tr>
