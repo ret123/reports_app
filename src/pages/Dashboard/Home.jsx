@@ -1,14 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSendLogoutMutation } from "../../services/auth/authApiSlice";
 import { useSelector } from "react-redux";
 import { selectCurrentRefreshToken } from "../../services/auth/authSlice";
 import { useNavigate } from "react-router-dom";
-import DropdownButton from "react-bootstrap/DropdownButton";
-import Dropdown from "react-bootstrap/Dropdown";
-import { useGetConfigQuery, useGetTablesQuery } from "../../services/reports/reportApiSlice";
-import TableDetails from "../../components/TableDetails";
+import { useGetTablesQuery } from "../../services/reports/reportApiSlice";
+import ReportTable from "../../components/ReportTable";
+import {
+  Container,
+  Button,
+  Typography,
+  Box,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
 
 const Home = () => {
+  const [selectedTable, setSelectedTable] = useState("");
+
   const [
     sendLogout,
     { isLoading: isLogoutLoading, isError: isLogoutError, error: logoutError },
@@ -16,9 +26,6 @@ const Home = () => {
   const refreshToken = useSelector(selectCurrentRefreshToken);
   const navigate = useNavigate();
 
-  const [selectedTable, setSelectedTable] = useState(null);
-
-  const { data: config, error: configError, isLoading: isConfigLoading } = useGetConfigQuery();
   const { data: tables, error: tablesError, isLoading: isTablesLoading } = useGetTablesQuery();
 
   const handleLogout = async () => {
@@ -30,63 +37,55 @@ const Home = () => {
     }
   };
 
-  if (isConfigLoading || isTablesLoading) {
+  if (isTablesLoading) {
     return <div>Loading...</div>;
   }
 
-  if (configError || tablesError) {
+  if (tablesError) {
     return <div>Error loading data</div>;
   }
 
-  if (!config || !tables) {
+  if (!tables) {
     return <div>No data available</div>;
   }
 
-  const { columns, filters, actions } = config;
-
   return (
-    <>
-      <div className="container">
-        <div className="d-flex justify-content-between mt-2">
-          <h1>Report Generator</h1>
-          <DropdownButton id="dropdown-basic-button" title="Actions">
-            {actions.map((action) => (
-              <Dropdown.Item key={action.name}>{action.name}</Dropdown.Item>
-            ))}
-          </DropdownButton>
-          <div>
-            <button
-              onClick={handleLogout}
-              className="btn btn-sm btn-dark"
-              disabled={isLogoutLoading}
-            >
-              {isLogoutLoading ? "Logging out..." : "Logout"}
-            </button>
-          </div>
-        </div>
-        <div className="mt-4">
-          <h2>Available Tables</h2>
-          <DropdownButton
-            id="table-dropdown"
-            title={selectedTable || "Select a Table"}
-            onSelect={(e) => setSelectedTable(e)}
+    <Container>
+      <Box display="flex" justifyContent="space-between" mt={2}>
+        <Typography variant="h4">Report Generator</Typography>
+        <Button
+          onClick={handleLogout}
+          variant="contained"
+          color="primary"
+          disabled={isLogoutLoading}
+        >
+          {isLogoutLoading ? "Logging out..." : "Logout"}
+        </Button>
+      </Box>
+      <Box mt={4}>
+        <Typography variant="h5">Available Tables</Typography>
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="table-select-label">Select a Table</InputLabel>
+          <Select
+            labelId="table-select-label"
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(e.target.value)}
           >
             {tables.map((table) => (
-              <Dropdown.Item key={table} eventKey={table}>
+              <MenuItem key={table} value={table}>
                 {table}
-              </Dropdown.Item>
+              </MenuItem>
             ))}
-          </DropdownButton>
-          {selectedTable && (
-            <div>
-              <h3>{selectedTable} Details</h3>
-              {/* Render table details component */}
-              <TableDetails tableName={selectedTable} />
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+          </Select>
+        </FormControl>
+        {selectedTable && (
+          <Box mt={5}>
+            <Typography variant="h6">{selectedTable} Details</Typography>
+            <ReportTable tableName={selectedTable} />
+          </Box>
+        )}
+      </Box>
+    </Container>
   );
 };
 

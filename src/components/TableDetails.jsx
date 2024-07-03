@@ -1,14 +1,37 @@
 import React, { useEffect, useState } from "react";
-import { useGetTableDetailsQuery } from "../services/reports/reportApiSlice";
-
+import { useGetConfigQuery, useGetTableDetailsQuery } from "../services/reports/reportApiSlice";
+import { useTable, useFilters } from 'react-table';
+import ColumnSelector from "./ColumnSelector"
+import DropdownButton from "react-bootstrap/DropdownButton";
+import Dropdown from "react-bootstrap/Dropdown";
 
 const TableDetails = ({ tableName }) => {
 
-
+  const { data: config, error: configError, isLoading: isConfigLoading } = useGetConfigQuery();
   const { data: table, error: tableError, isLoading: isTableLoading } = useGetTableDetailsQuery(tableName);
-  console.log(table);
-  const [tableData, setTableData] = useState(table.rows);
-  const [columns, setColumns] = useState(table.columns);
+  //  const tableInstance = useTable({ columns: table.columns, data: table.rows }, useFilters);
+  
+  if (isConfigLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (configError) {
+    return <div>Error loading data</div>;
+  }
+
+  if (!config) {
+    return <div>No data available</div>;
+  }
+  
+  if (isTableLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (tableError) {
+    return <div>Error: {tableError.message}</div>;
+  }
+  // const [tableData, setTableData] = useState(table.rows);
+  // const [columns, setColumns] = useState(table.columns);
 
 //   useEffect(() => {
 //     const fetchData = async () => {
@@ -24,21 +47,24 @@ const TableDetails = ({ tableName }) => {
 //     fetchData();
 //   }, [tableName]);
 
+const { columns, filters, actions } = config;
+
   return (
     <div>
-      {tableData.length > 0 ? (
+      
+      {table.rows.length > 0 ? (
         <table className="table table-bordered">
           <thead>
             <tr>
-              {columns.map((col) => (
+              {table.columns.map((col) => (
                 <th key={col}>{col}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {tableData.map((row, index) => (
+            {table.rows.map((row, index) => (
               <tr key={index}>
-                {columns.map((col) => (
+                {table.columns.map((col) => (
                   <td key={col}>{row[col]}</td>
                 ))}
               </tr>
@@ -48,6 +74,12 @@ const TableDetails = ({ tableName }) => {
       ) : (
         <div>No data available for the selected table</div>
       )}
+       <ColumnSelector columns={table.columns} />
+       <DropdownButton id="dropdown-basic-button" title="Actions">
+            {actions.map((action) => (
+              <Dropdown.Item key={action.name}>{action.name}</Dropdown.Item>
+            ))}
+          </DropdownButton>
     </div>
   );
 };

@@ -4,6 +4,8 @@ import { setCredentials, logOut } from './authSlice';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: 'http://localhost:1338/v1',
+  credentials: 'include',
+  mode: 'cors',
   prepareHeaders: (headers, { getState }) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -11,16 +13,16 @@ const baseQuery = fetchBaseQuery({
     }
     return headers;
   },
-  fetchOptions: {
-    credentials: 'include',
-  },
+  // fetchOptions: {
+  //   credentials: 'include',
+  // },
 });
 
-const tokenBaseQuery = fetchBaseQuery({
-  baseUrl: 'http://localhost:1338/v1',
-  credentials: 'include',
-  mode: 'cors',
-});
+// const tokenBaseQuery = fetchBaseQuery({
+//   baseUrl: 'http://localhost:1338/v1',
+//   credentials: 'include',
+//   mode: 'cors',
+// });
 
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
@@ -33,7 +35,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       // }
      
 
-      const refreshResult = await tokenBaseQuery(
+      const refreshResult = await baseQuery(
         {
           url: '/auth/refresh-tokens',
           method: 'POST',
@@ -80,5 +82,4 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 
 
 export default  baseQueryWithReauth;
-
 
