@@ -54,7 +54,7 @@ const Login = () => {
                     {isLoading && ( <BarLoader width="100%" />)}
                         <Card.Body>
                             <Link to="/" className="text-center d-block py-3 w-100">
-                                <h2>Aegis demo</h2>
+                                <h2>Report Generator</h2>
                             </Link>
                             <p className="text-center">Log in to your dashboard</p>
                             <Formik

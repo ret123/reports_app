@@ -1,45 +1,44 @@
-import React, { useState } from 'react';
-import { useGeneratePdfQuery, useGetConfigQuery, useGetTableDetailsQuery } from '../services/reports/reportApiSlice';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Menu, MenuItem, Typography, Box, Grid } from '@mui/material';
-import ColumnSelector from "./ColumnSelector";
-import { generatePdf } from '../services/reports/ReportApiService';
+import React, { useState, useEffect } from 'react';
+import { useGetTableDetailsQuery } from '../services/reports/reportApiSlice';
+import { Box, Button, Grid,FormControl,InputLabel,Select ,MenuItem  } from '@mui/material';
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+import { generateExcel, generatePdf } from '../services/reports/ReportApiService';
+import ChartComponent from './Chartcomponent';
 
 const ReportTable = ({ tableName }) => {
-
   const { data, error, isLoading } = useGetTableDetailsQuery(tableName);
-  const { data: config, error: configError, isLoading: isConfigLoading } = useGetConfigQuery();
+  const [filters, setFilters] = useState([]);
+  const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
 
-  const { isLoading: isGeneratingPdf, isError: generatePdfError, isSuccess: generatePdfSuccess, data: pdfBlob, refetch: refetchGeneratePdf } = useGeneratePdfQuery();
+  const [selectedColumns, setSelectedColumns] = useState(null);
+  const [chartType, setChartType] = useState('line');
+  const [chartData, setChartData] = useState(null);
 
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [filters, setFilters] = useState({}); // State to store filter values
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleFilterChange = (column, value) => {
-    setFilters({ ...filters, [column]: value });
-  };
+  useEffect(() => {
+    if (data && data.columns) {
+      const initialVisibility = data.columns.reduce((model, col) => {
+        model[col] = true; // Initially, all columns are visible
+        return model;
+      }, {});
+      setColumnVisibilityModel(initialVisibility);
+    }
+  }, [data]);
 
   const handleExport = async (format) => {
-    
-    
-    console.log(`Exporting data in ${format} format`);
+    const visibleColumns = Object.keys(columnVisibilityModel).filter(col => columnVisibilityModel[col]);
+    const filteredRows = data.rows.map(row => {
+      const filteredRow = {};
+      visibleColumns.forEach(col => {
+        filteredRow[col] = row[col];
+      });
+      return filteredRow;
+    });
 
-    if(format === 'pdf') {
-      
-      // refetchGeneratePdf({
-      //   tableName: tableName, 
-      //   filters,
-      //   columns: data.columns, 
-      // });
+    if (format === 'pdf') {
+      console.log(visibleColumns)
       try {
-        const pdfResponse = await generatePdf(tableName, filters, data.columns);
+        const pdfResponse = await generatePdf(tableName, filters, visibleColumns, filteredRows);
         const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -49,105 +48,129 @@ const ReportTable = ({ tableName }) => {
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        // Optionally trigger download or further handling of pdfBlob
       } catch (error) {
         console.error('Error generating PDF:', error);
-        // Handle error state or display error message
       }
+    } else if (format === 'excel') {
+      try {
+        const response = await generateExcel(tableName, filters, visibleColumns, filteredRows);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'report.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error exporting to Excel:', error);
+      }
+    } else if (format === 'csv') {
+      const csvContent = [
+        visibleColumns.join(','), // Add header row
+        ...filteredRows.map(row => visibleColumns.map(col => row[col]).join(',')), // Add data rows
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'report.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
     }
-    
   };
 
-  if (isConfigLoading || isLoading) {
-    return <div>Loading...</div>;
-  }
+  const handleChartGeneration = () => {
+    const labels = data.rows.map((row, index) => `Row ${index + 1}`);
+    const datasets = selectedColumns.map((col) => ({
+      label: col,
+      data: data.rows.map((row) => row[col]),
+    }));
 
-  if (configError || error) {
-    return <div>Error loading data</div>;
-  }
+    setChartData({
+      labels,
+      datasets,
+    });
+  };
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Chart.js Chart',
+      },
+    },
+  };
+  const chartComponents = {
+    line: (data) => <Line data={data} options={chartOptions} />,
+    bar: (data) => <Bar data={data} options={chartOptions} />,
+    pie: (data) => <Pie data={data} options={chartOptions} />,
+  };
 
-  if (!config || !data) {
-    return <div>No data available</div>;
-  }
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading data</div>;
+  if (!data) return <div>No data available</div>;
 
-  const { columns, rows } = data;
-  const { actions } = config;
+  const columns = data.columns.map(col => ({
+    field: col,
+    headerName: col,
+    flex: 1,
+  }));
 
   return (
     <Box>
       <Grid container spacing={2} justifyContent="space-between" marginBottom={3}>
         <Grid item>
-          <ColumnSelector columns={columns} />
-        </Grid>
-        <Grid item>
-          <Button
-            variant="contained"
-            onClick={handleMenuOpen}
-            aria-controls="actions-menu"
-            aria-haspopup="true"
-          >
-            Actions
-          </Button>
-          <Menu
-            id="actions-menu"
-            anchorEl={anchorEl}
-            keepMounted
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            {actions.map((action) => (
-              <MenuItem key={action.name}>{action.name}</MenuItem>
-            ))}
-          </Menu>
-          <Button variant="contained" onClick={() => handleExport('pdf')}>
+          <Button variant="contained" color="secondary" onClick={() => handleExport('pdf')}>
             Export to PDF
           </Button>
-          <Button variant="contained" onClick={() => handleExport('excel')}>
+        </Grid>
+        <Grid item>
+          <Button variant="contained" color="success" onClick={() => handleExport('excel')}>
             Export to Excel
           </Button>
-          <Button variant="contained" onClick={() => handleExport('csv')}>
+        </Grid>
+        <Grid item>
+          <Button variant="contained" color="warning" onClick={() => handleExport('csv')}>
             Export to CSV
           </Button>
         </Grid>
+        <Grid item>
+          <FormControl fullWidth>
+            <InputLabel>Select Chart Type</InputLabel>
+            <Select value={chartType} onChange={(e) => setChartType(e.target.value)}>
+              <MenuItem value="line">Line</MenuItem>
+              <MenuItem value="bar">Bar</MenuItem>
+              <MenuItem value="pie">Pie</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item>
+          <Button variant="contained" color="primary" onClick={handleChartGeneration}>
+            Generate Chart
+          </Button>
+        </Grid>
       </Grid>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              {columns.map((col) => (
-                <TableCell key={col}>
-                  <input
-                    type="text"
-                    placeholder={`Filter ${col}`}
-                    value={filters[col] || ''}
-                    onChange={(e) => handleFilterChange(col, e.target.value)}
-                  />
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody sx={{
-            '& .MuiTableRow-root:nth-of-type(even)': {
-              backgroundColor: '#f0f0f0', // Light gray background for even rows
-            },
-            '& .MuiTableRow-root:nth-of-type(odd)': {
-              backgroundColor: '#ffffff', // White background for odd rows
-            },
-          }}>
-            {rows.filter((row) =>
-              columns.every((col) =>
-                !filters[col] || row[col].toLowerCase().includes(filters[col].toLowerCase())
-              )
-            ).map((row, index) => (
-              <TableRow key={index}>
-                {columns.map((col) => (
-                  <TableCell key={col}>{row[col]}</TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      
+      <Box style={{ height: 600, width: '100%' }}>
+        <DataGrid
+          columns={columns}
+          rows={data.rows}
+          components={{ Toolbar: GridToolbar }}
+          columnVisibilityModel={columnVisibilityModel}
+          onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
+          filterModel={{
+            items: filters,
+          }}
+          onFilterModelChange={(model) => setFilters(model.items)}
+        />
+      </Box>
     </Box>
   );
 };
