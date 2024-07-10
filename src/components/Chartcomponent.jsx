@@ -1,40 +1,58 @@
-import React from 'react';
-import { Bar } from 'react-chartjs-2';
-import './ChartSetup'; // Import the ChartSetup file to ensure components are registered
+// components/ReportBarChart.js
+import React, { useRef } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import { Box, Button, Grid } from '@mui/material';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
-const ChartComponent = ({ data }) => {
-    console.log(data)
-  const chartData = {
-    labels: data.map(row => row.label),
-    datasets: [
-      {
-        label: 'Sample Data',
-        data: data.map(row => row.value),
-        backgroundColor: 'rgba(75,192,192,0.4)',
-        borderColor: 'rgba(75,192,192,1)',
-        borderWidth: 1,
-      },
-    ],
+const ReportChart= ({ data, xAxisKey, yAxisKey }) => {
+  const chartRef = useRef(null);
+
+  const exportAsImage = async () => {
+    const canvas = await html2canvas(chartRef.current);
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = 'chart.png';
+    link.click();
   };
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'Chart Title',
-      },
-    },
+  const exportAsPDF = async () => {
+    const canvas = await html2canvas(chartRef.current);
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF();
+    pdf.addImage(imgData, 'PNG', 0, 0);
+    pdf.save('chart.pdf');
   };
 
   return (
-    <div>
-      <Bar data={chartData} options={options} />
-    </div>
+    <Box>
+      <Grid container spacing={2} marginBottom={2}>
+        <Grid item>
+          <Button variant="contained" onClick={exportAsImage}>Export as Image</Button>
+        </Grid>
+        <Grid item>
+          <Button variant="contained" onClick={exportAsPDF}>Export as PDF</Button>
+        </Grid>
+      </Grid>
+      <Box ref={chartRef} sx={{ height: 400, width: '100%' }}>
+        <ResponsiveContainer>
+          <BarChart
+            data={data}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={xAxisKey} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey={yAxisKey} fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
+    </Box>
   );
 };
 
-export default ChartComponent;
+export default ReportChart;

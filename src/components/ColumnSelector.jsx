@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ListGroup, ListGroupItem, Row, Col } from 'react-bootstrap';
 import IconButton from '@mui/material/IconButton';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -14,19 +14,27 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 
-const ColumnSelector = ({ columns }) => {
+const ColumnSelector = ({ columns, onColumnSelectionChange }) => {
   const [selectedColumns, setSelectedColumns] = useState([]);
   const [show, setShow] = useState(false);
 
+  useEffect(() => {
+    // Reset selected columns when columns prop changes
+    setSelectedColumns([]);
+  }, [columns]);
+
   const handleShow = () => setShow(true);
-  const handleClose = () => setShow(false);
+  const handleClose = () => {
+    onColumnSelectionChange(selectedColumns);
+    setShow(false);
+  };
 
   const handleSelectColumn = (column) => {
     setSelectedColumns([...selectedColumns, column]);
   };
 
   const handleDeselectColumn = (column) => {
-    setSelectedColumns(selectedColumns.filter(c => c !== column));
+    setSelectedColumns(selectedColumns.filter((c) => c !== column));
   };
 
   const handleSelectAll = () => {
@@ -40,19 +48,25 @@ const ColumnSelector = ({ columns }) => {
   const handleMoveColumnUp = (index) => {
     if (index === 0) return;
     const newSelectedColumns = [...selectedColumns];
-    [newSelectedColumns[index - 1], newSelectedColumns[index]] = [newSelectedColumns[index], newSelectedColumns[index - 1]];
+    [newSelectedColumns[index - 1], newSelectedColumns[index]] = [
+      newSelectedColumns[index],
+      newSelectedColumns[index - 1],
+    ];
     setSelectedColumns(newSelectedColumns);
   };
 
   const handleMoveColumnDown = (index) => {
     if (index === selectedColumns.length - 1) return;
     const newSelectedColumns = [...selectedColumns];
-    [newSelectedColumns[index + 1], newSelectedColumns[index]] = [newSelectedColumns[index], newSelectedColumns[index + 1]];
+    [newSelectedColumns[index + 1], newSelectedColumns[index]] = [
+      newSelectedColumns[index],
+      newSelectedColumns[index + 1],
+    ];
     setSelectedColumns(newSelectedColumns);
   };
 
-  const availableColumns = columns.filter(col => !selectedColumns.includes(col));
-  console.log(selectedColumns)
+  const availableColumns = columns.filter((col) => !selectedColumns.includes(col));
+  console.log(selectedColumns);
   return (
     <>
       <Button variant="contained" color="primary" onClick={handleShow}>
@@ -66,7 +80,7 @@ const ColumnSelector = ({ columns }) => {
             <Col>
               <h5>Available Columns</h5>
               <ListGroup>
-                {availableColumns.map(col => (
+                {availableColumns.map((col) => (
                   <ListGroupItem key={col} onClick={() => handleSelectColumn(col)}>
                     {col}
                   </ListGroupItem>
@@ -105,14 +119,20 @@ const ColumnSelector = ({ columns }) => {
                       <div>
                         <IconButton
                           size="small"
-                          onClick={(e) => { e.stopPropagation(); handleMoveColumnUp(index); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveColumnUp(index);
+                          }}
                           disabled={index === 0}
                         >
                           <ArrowUpwardIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           size="small"
-                          onClick={(e) => { e.stopPropagation(); handleMoveColumnDown(index); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMoveColumnDown(index);
+                          }}
                           disabled={index === selectedColumns.length - 1}
                         >
                           <ArrowDownwardIcon fontSize="small" />

@@ -1,0 +1,29 @@
+/* src/styles/ColumnSelector.css */
+.row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  h5 {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  
+  .ListGroup {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .ListGroupItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 5px;
+  }
+  
+  .IconButton {
+    padding: 5px;
+  }
+  

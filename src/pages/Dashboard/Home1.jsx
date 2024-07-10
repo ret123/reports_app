@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { selectCurrentRefreshToken } from "../../services/auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import { useGetTablesQuery } from "../../services/reports/reportApiSlice";
-import ReportTable from "../../components/ReportTable6";
+import ReportTable from "../../components/ReportTable5";
 import {
   Container,
   Button,
@@ -18,7 +18,7 @@ import {
 
 const Home = () => {
   const [selectedTable, setSelectedTable] = useState("");
-  const [showDataGrid, setShowDataGrid] = useState(false);
+
   const [
     sendLogout,
     { isLoading: isLogoutLoading, isError: isLogoutError, error: logoutError },
@@ -63,16 +63,13 @@ const Home = () => {
         </Button>
       </Box>
       <Box mt={4}>
-        <Typography variant="h5">Select Table</Typography>
+        <Typography variant="h5">Available Tables</Typography>
         <FormControl fullWidth margin="normal">
           <InputLabel id="table-select-label">Select a Table</InputLabel>
           <Select
             labelId="table-select-label"
             value={selectedTable}
-            onChange={(e) => {
-              setSelectedTable(e.target.value)
-              setShowDataGrid(false)
-            }}
+            onChange={(e) => setSelectedTable(e.target.value)}
           >
             {tables.map((table) => (
               <MenuItem key={table} value={table}>
@@ -84,7 +81,7 @@ const Home = () => {
         {selectedTable && (
           <Box mt={5}>
             <Typography variant="h6">{selectedTable} Details</Typography>
-            <ReportTable tableName={selectedTable} showDataGrid = {showDataGrid}/> 
+            <ReportTable tableName={selectedTable} />
           </Box>
         )}
       </Box>
